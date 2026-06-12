@@ -124,16 +124,21 @@ BROKEN=$(find dataset_yolo_balanced/images -type l ! -exec test -e {} \; -print 
 # ---------- 6. resumen ----------
 NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
 PYCMD="$VENV/bin/python"
-[ "$USE_ACTIVE_ENV" = "1" ] && PYCMD="python3   # (entorno activo: activa el mismo env conda dentro de tmux)"
+NOTE=""
+if [ "$USE_ACTIVE_ENV" = "1" ]; then
+    PYCMD="python3"
+    NOTE="
+    # (entorno activo: recuerda 'conda activate <env>' dentro de tmux)"
+fi
 echo
 ok "TODO LISTO. Para entrenar dentro de tmux (sobrevive a desconexiones SSH):"
 cat <<EOF
 
-    tmux new -s train
+    tmux new -s train$NOTE
     $PYCMD train_yolo.py --workers $(( NPROC < 8 ? NPROC : 8 ))
     # despegarse: Ctrl+B y luego D   |   volver: tmux attach -t train
 
     # al terminar:
-    ${PYCMD%%   *} evaluate_yolo.py \\
+    $PYCMD evaluate_yolo.py \\
         --weights runs/detect/foid_yolo11m/weights/best.pt --split test
 EOF
