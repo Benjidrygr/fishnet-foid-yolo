@@ -1,0 +1,18 @@
+path: /Users/azariel/Downloads/foid/dataset_yolo
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: ALB
+  1: BET
+  2: BILL
+  3: DOL
+  4: HUMAN
+  5: LAG
+  6: OTH
+  7: PLS
+  8: SHARK
+  9: SKJ
+  10: TUNA
+  11: YFT

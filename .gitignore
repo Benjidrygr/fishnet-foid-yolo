@@ -1,0 +1,23 @@
+# --- datos pesados (35GB+ de imagenes, datasets descargables/regenerables) ---
+images/
+*.zip
+foid_labels_v100/
+
+# datasets generados: se regeneran con los scripts; solo se versiona su doc
+dataset_yolo/images/
+dataset_yolo/labels/
+dataset_yolo_balanced/images/
+dataset_yolo_balanced/labels/
+cvat_export/
+
+# --- secretos ---
+.cvat_admin_pass
+
+# --- entornos y artefactos ---
+.venv-*/
+__pycache__/
+*.pyc
+runs/
+*.pt
+data.resolved.yaml
+.DS_Store
