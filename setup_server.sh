@@ -18,6 +18,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 VENV=.venv-train
+# --no-venv: usar el Python del entorno activo (ej. conda) en vez de crear venv
+USE_ACTIVE_ENV=0
+[ "${1:-}" = "--no-venv" ] && USE_ACTIVE_ENV=1
 ok()   { printf '\033[32m[OK]\033[0m %s\n' "$1"; }
 info() { printf '\033[36m[..]\033[0m %s\n' "$1"; }
 warn() { printf '\033[33m[!!]\033[0m %s\n' "$1"; }
@@ -51,7 +54,17 @@ else
 fi
 
 # ---------- 3. entorno de Python ----------
-if [ ! -x "$VENV/bin/python" ]; then
+if [ "$USE_ACTIVE_ENV" = "1" ]; then
+    # PY apunta al python activo; el resto del script lo usa via $VENV/bin/python,
+    # asi que creamos un alias minimo con la misma estructura de rutas.
+    VENV=$(mktemp -d)
+    mkdir -p "$VENV/bin"
+    PYBIN=$(command -v python3)
+    ln -s "$PYBIN" "$VENV/bin/python"
+    printf '#!/bin/sh\nexec "%s" -m pip "$@"\n' "$PYBIN" > "$VENV/bin/pip"
+    chmod +x "$VENV/bin/pip"
+    ok "usando el entorno activo: $PYBIN"
+elif [ ! -x "$VENV/bin/python" ]; then
     info "creando venv $VENV"
     python3 -m venv "$VENV"
 fi
@@ -110,15 +123,17 @@ BROKEN=$(find dataset_yolo_balanced/images -type l ! -exec test -e {} \; -print 
 
 # ---------- 6. resumen ----------
 NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+PYCMD="$VENV/bin/python"
+[ "$USE_ACTIVE_ENV" = "1" ] && PYCMD="python3   # (entorno activo: activa el mismo env conda dentro de tmux)"
 echo
 ok "TODO LISTO. Para entrenar dentro de tmux (sobrevive a desconexiones SSH):"
 cat <<EOF
 
     tmux new -s train
-    $VENV/bin/python train_yolo.py --workers $(( NPROC < 8 ? NPROC : 8 ))
+    $PYCMD train_yolo.py --workers $(( NPROC < 8 ? NPROC : 8 ))
     # despegarse: Ctrl+B y luego D   |   volver: tmux attach -t train
 
     # al terminar:
-    $VENV/bin/python evaluate_yolo.py \\
+    ${PYCMD%%   *} evaluate_yolo.py \\
         --weights runs/detect/foid_yolo11m/weights/best.pt --split test
 EOF
