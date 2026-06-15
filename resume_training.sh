@@ -63,15 +63,24 @@ else
 fi
 rm -f "$DST"/.results.csv.swp   # swap de vim que quedó del servidor viejo
 
-# ---------- 4. parchear la ruta del dataset dentro de last.pt ----------
-info "parcheando ruta del dataset en last.pt (apunta a esta máquina)"
-"$PY" - "$DST/weights/last.pt" "$DATA" <<'PY'
+# ---------- 4. parchear rutas absolutas de la máquina vieja dentro de last.pt ----------
+# El checkpoint guardó 'data' y 'save_dir' con rutas de /home/ubuntu/...; en resume
+# Ultralytics las reutiliza tal cual e intenta leer/escribir allí. Las reapuntamos
+# a esta máquina (si no, falla con FileNotFound/PermissionError en /home/ubuntu).
+info "parcheando rutas (data y save_dir) en last.pt"
+"$PY" - "$DST/weights/last.pt" "$DATA" "$DST" "$NAME" <<'PY'
 import os, sys, torch
-ckpt, data = sys.argv[1], os.path.abspath(sys.argv[2])
+ckpt, data, dst, name = sys.argv[1:5]
+data, dst = os.path.abspath(data), os.path.abspath(dst)
 ck = torch.load(ckpt, map_location="cpu", weights_only=False)
-ck["train_args"]["data"] = data
+a = ck["train_args"]
+a["data"] = data
+a["save_dir"] = dst
+a["project"] = os.path.dirname(dst)
+a["name"] = name
 torch.save(ck, ckpt)
-print(f"    data -> {data} (época guardada: {ck.get('epoch', '?')})")
+print(f"    data     -> {data}")
+print(f"    save_dir -> {dst} (época guardada: {ck.get('epoch', '?')})")
 PY
 
 # ---------- 5. reanudar ----------
