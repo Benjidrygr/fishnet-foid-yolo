@@ -12,6 +12,7 @@ cvat_export/
 
 # --- secretos ---
 .cvat_admin_pass
+tunnel.conf
 
 # --- entornos y artefactos ---
 .venv-*/
